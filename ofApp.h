@@ -7,20 +7,17 @@ typedef enum { MoveStop, MoveLeft, MoveRight, MoveUp, MoveDown } MoveDir;
 
 // This is a base object that all drawable object inherit from
 // It is possible this will be replaced by ofNode when we move to 3D
-// 
+//
 class BaseObject {
 public:
 	BaseObject();
-	ofVec2f trans, scale; //
 	glm::vec3 scaleVector;
 	float rot;
 	bool bSelected;
 	glm::vec3 pos; //added
-
+	glm::vec3 heading;
 	void setPosition(glm::vec3);
-	virtual bool inside() { return false; }
-	glm::mat4 getMatrix(); // triange: this was used for inside()
-	
+	glm::mat4 getMatrix();
 };
 
 //  General Sprite class  (similar to a Particle)
@@ -68,8 +65,8 @@ public:
 	void setChildImage(ofImage);
 	void setImage(ofImage);
 	void setRate(float);
+	//void setRotation(float);
 	void update();
-	bool inside(glm::vec3 mouseTransformed, glm::vec3 pos);
 	void shoot(float time);
 
 	SpriteSystem *sys;
@@ -84,6 +81,7 @@ public:
 	bool haveChildImage;
 	bool haveImage;
 	float width, height;
+	ofSoundPlayer shootSound;
 };
 
 
@@ -93,7 +91,6 @@ public:
 	void setup();
 	void update();
 	void draw();
-
 	void keyPressed(int key);
 	void keyReleased(int key);
 	void mouseMoved(int x, int y);
@@ -106,24 +103,26 @@ public:
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
 
-	//	vector<Emitter *> emitters;
-	//	int numEmitters;
-
 	Emitter  *turret = NULL;
 
-	ofImage defaultImage;
-	ofVec3f mouse_last;
-	bool imageLoaded;
-
+	ofImage defaultImage; // sprite
+	ofImage turretImage; // turret
+	bool imageLoaded; // sprite
+	bool turretImageLoaded; // turret
 	bool bHide;
+
+	ofImage background;
+	ofSoundPlayer musicPlayer;
+	ofTrueTypeFont text;
 
 	ofxFloatSlider rate;
 	ofxFloatSlider life;
 	ofxVec3Slider velocity;
+
 	ofxLabel screenSize;
-
-
 	ofxPanel gui;
+
+	bool gameStarted;
 
 	glm::vec3 heading() {
 		glm::vec3 initialHeading = glm::vec3(0, -1, 0);

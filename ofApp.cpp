@@ -1,35 +1,10 @@
 #include "ofApp.h"
-//----------------------------------------------------------------------------------
-//
-// This example code demonstrates the use of an "Emitter" class to emit Sprites
-// and set them in motion. The concept of an "Emitter" is taken from particle
-// systems (which we will cover next week).
-//
-// The Sprite class has also been upgraded to include lifespan, velocity and age
-// members.   The emitter can control rate of emission and the current velocity
-// of the particles. In this example, there is no acceleration or physics, the
-// sprites just move simple frame-based animation.
-//
-// The code shows a way to attach images to the sprites and optional the
-// emitter (which is a point source) can also have an image.  If there are
-// no images attached, a placeholder rectangle is drawn.
-// Emitters  can be placed anywhere in the window. In this example, you can drag
-// it around with the mouse.
-//
-// OF has an add-in called ofxGUI which is a very simple UI that is useful for
-// creating sliders, buttons and fields. It is not recommended for commercial 
-// game development, but it is useful for testing.  The "h" key will hide the GUI
-// 
-// If you want to run this example, you need to use the ofxGUI add-in in your
-// setup.
-//
-//
-//  Kevin M. Smith - CS 134 SJSU
 
 BaseObject::BaseObject() {
 	pos = glm::vec3(0, 0, 0);
 	scaleVector = glm::vec3(1, 1, 1);
 	rot = 0;
+	heading = glm::vec3(0, -1, 0);
 }
 
 void BaseObject::setPosition(glm::vec3 pos) {
@@ -52,13 +27,13 @@ glm::mat4 BaseObject::getMatrix() {
 Sprite::Sprite() {
 	speed = 0;
 	velocity = ofVec3f(0, 0, 0);
-	lifespan = -1;      // lifespan of -1 => immortal 
+	lifespan = -1;      // lifespan of -1 => immortal
 	birthtime = 0;
 	bSelected = false;
 	haveImage = false;
-	name = "UnamedSprite";
-	width = 60;
-	height = 80;
+	name = "Snowflake";
+	width = 50;
+	height = 50;
 }
 
 // Return a sprite's age in milliseconds
@@ -75,33 +50,37 @@ void Sprite::setImage(ofImage img) {
 	haveImage = true;
 	width = image.getWidth();
 	height = image.getHeight();
-}
 
+}
 
 //  Render the sprite
 //
 void Sprite::draw() {
 
 	ofSetColor(255, 255, 255, 255);
-	ofPushMatrix();
-	ofMultMatrix(getMatrix());
+
+	pos += 5 * heading;
 	// draw image centered and add in translation amount
 	//
 	if (haveImage) {
-		image.draw(-width / 2.0, -height / 2.0);
+		image.draw(-width / 2.0 + pos.x, -height / 2.0 + pos.y);
+		//cout << "have image" << endl;
 	}
-	else {
+	else
+	{
 		// in case no image is supplied, draw something.
-		// 
+		//
 		ofSetColor(255, 0, 0);
-		ofDrawRectangle(-width / 2.0, -height / 2.0, width, height);
+		ofDrawRectangle(-width / 2.0 + pos.x, -height / 2.0, width, height + pos.y);
 	}
-	ofPopMatrix();
+
+	//ofPopMatrix();
 }
 
 //  Add a Sprite to the Sprite System
 //
 void SpriteSystem::add(Sprite s) {
+
 	sprites.push_back(s);
 }
 
@@ -113,7 +92,6 @@ void SpriteSystem::remove(int i) {
 	sprites.erase(sprites.begin() + i);
 }
 
-
 //  Update the SpriteSystem by checking which sprites have exceeded their
 //  lifespan (and deleting).  Also the sprite is moved to it's next
 //  location based on velocity and direction.
@@ -121,6 +99,7 @@ void SpriteSystem::remove(int i) {
 void SpriteSystem::update() {
 
 	if (sprites.size() == 0) return;
+	//cout << "sprite system update: size = " << sprites.size() << endl;
 	vector<Sprite>::iterator s = sprites.begin();
 	vector<Sprite>::iterator tmp;
 
@@ -140,17 +119,18 @@ void SpriteSystem::update() {
 	//  Move sprite
 	//
 	for (int i = 0; i < sprites.size(); i++) {
-		sprites[i].pos += sprites[i].velocity / ofGetFrameRate();
+		//sprites[i].pos += sprites[i].velocity / ofGetFrameRate();
 	}
 }
 
 //  Render all the sprites
 //
 void SpriteSystem::draw() {
+	//cout << "sprite system draw called" << endl;
+	//cout << "system size = " << sprites.size() << endl;
 	for (int i = 0; i < sprites.size(); i++) {
 		sprites[i].draw();
 	}
-	
 }
 
 //  Create a new Emitter - needs a SpriteSystem
@@ -159,15 +139,14 @@ Emitter::Emitter(SpriteSystem *spriteSys) {
 	sys = spriteSys;
 	lifespan = 3000;    // milliseconds
 	started = false;
-
 	lastSpawned = 0;
 	rate = 1;    // sprites/sec
 	haveChildImage = false;
 	haveImage = false;
 	velocity = ofVec3f(100, 100, 0);
 	drawable = true;
-	width = 50;
-	height = 50;
+	width = 100;
+	height = 100;
 }
 
 //  Draw the Emitter if it is drawable. In many cases you would want a hidden emitter
@@ -187,17 +166,18 @@ void Emitter::draw() {
 			ofDrawRectangle(-width / 2.0, -height / 2.0, width, height);
 		}
 	}
+	//cout << "drew emitter" << endl;
 	ofPopMatrix();
 
 	sys->draw();
-
-	
+	//cout << "sys->draw() called" << endl;
 }
 
 //  Update the Emitter. If it has been started, spawn new sprites with
 //  initial velocity, lifespan, birthtime.
 //
 void Emitter::update() {
+	if (!started) return;
 
 	float time = ofGetElapsedTimeMillis();
 	if (started) {
@@ -205,16 +185,24 @@ void Emitter::update() {
 			shoot(time);
 		}
 	}
+
 	sys->update();
 }
 
 // Shoot one sprite
 void Emitter::shoot(float time) {
+	shootSound.load("sounds/hit-sound.wav");
+	shootSound.setVolume(0.2);
+	shootSound.play();
 	// spawn a new sprite
 	Sprite sprite;
-	if (haveChildImage) sprite.setImage(childImage);
+	if (haveChildImage) {
+		sprite.setImage(childImage);
+		//cout << "have child image" << endl;
+	}
 	sprite.velocity = velocity;
 	sprite.lifespan = lifespan;
+	sprite.heading = heading;
 	sprite.setPosition(pos);
 	sprite.birthtime = time;
 	sys->add(sprite);
@@ -231,7 +219,6 @@ void Emitter::start() {
 void Emitter::stop() {
 	started = false;
 }
-
 
 void Emitter::setLifespan(float life) {
 	lifespan = life;
@@ -255,26 +242,6 @@ void Emitter::setRate(float r) {
 	rate = r;
 }
 
-bool Emitter::inside(glm::vec3 mouseTransformed, glm::vec3 pos) {
-	glm::vec3 p1 = glm::vec3(ofGetWindowWidth() / 2.0, ofGetWindowHeight() / 2.0, 0);
-	glm::vec3 p2 = glm::vec3(ofGetWindowWidth() / 2.0 + image.getWidth(), ofGetWindowHeight() / 2.0, 0);
-	glm::vec3 p3 = glm::vec3(ofGetWindowWidth() / 2.0 + image.getWidth(), ofGetWindowHeight() / 2.0 + image.getHeight(), 0);
-	glm::vec3 p4 = glm::vec3(ofGetWindowWidth() / 2.0, ofGetWindowHeight() / 2.0 + image.getHeight(), 0);
-
-	glm::vec3 v1 = glm::normalize(p1 - mouseTransformed);
-	glm::vec3 v2 = glm::normalize(p2 - mouseTransformed);
-	glm::vec3 v3 = glm::normalize(p3 - mouseTransformed);
-	glm::vec3 v4 = glm::normalize(p4 - mouseTransformed);
-
-	float a1 = glm::orientedAngle(v1, v2, glm::vec3(0, 0, 1));
-	float a2 = glm::orientedAngle(v2, v3, glm::vec3(0, 0, 1));
-	float a3 = glm::orientedAngle(v3, v4, glm::vec3(0, 0, 1));
-	float a4 = glm::orientedAngle(v4, v1, glm::vec3(0, 0, 1));
-
-	if (a1 < 0 && a2 < 0 && a3 < 0 && a4 < 0) return true;
-	else return false;
-
-}
 
 
 //--------------------------------------------------------------
@@ -282,54 +249,75 @@ void ofApp::setup() {
 
 	ofSetVerticalSync(true);
 
+	background.load("images/cloud.png");
+
 	// create an image for sprites being spawned by emitter
 	//
-	if (defaultImage.load("images/bear.png")) {
+	if (defaultImage.load("images/pink-snowflake.png")) {
 		imageLoaded = true;
 	}
 	else {
-		ofLogFatalError("can't load image: images/ship.png");
+		ofLogFatalError("can't load image: images/snowflake.png");
+		ofExit();
+	}
+
+	// load image for turret
+	if (turretImage.load("images/penguin.png")) {
+		turretImageLoaded = true;
+	}
+	else {
+		ofLogFatalError("can't load image: images/penguin.png");
 		ofExit();
 	}
 
 
-
-	// create an array of emitters and set their position;
-	//
-
-
+	// create new emitter
 	turret = new Emitter(new SpriteSystem());
-//	turret = new Emitter();
-
 	turret->setPosition(ofVec3f(ofGetWindowWidth() / 2.0, ofGetWindowHeight() / 2.0, 0));
 	turret->drawable = true;
+	turret->setImage(turretImage);
 	turret->setChildImage(defaultImage);
-
 
 	gui.setup();
 	gui.add(rate.setup("rate", 10, 1, 100));
 	gui.add(life.setup("life", 5, .1, 10));
 	gui.add(velocity.setup("velocity", ofVec3f(0, -200, 0), ofVec3f(-1000, -1000, -1000), ofVec3f(1000, 1000, 1000)));
+
 	bHide = false;
+	gameStarted = false;
+
+	text.load("8bitfont.ttf", 20);
+
+	musicPlayer.load("sounds/background-music.wav");
+	musicPlayer.setVolume(0.2);
+	musicPlayer.play();
+	musicPlayer.setLoop(true);
 
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
+	//turret->heading = heading();
 	turret->setRate(rate);
-	turret->setLifespan(life * 1000);    // convert to milliseconds 
+	turret->setLifespan(life * 1000);    // convert to milliseconds
 	turret->setVelocity(ofVec3f(velocity->x, velocity->y, velocity->z));
 	turret->update();
-
 }
 
 
 //--------------------------------------------------------------
 void ofApp::draw() {
+	background.resize(ofGetWindowWidth(), ofGetWindowHeight());
+	background.draw(0, 0);
 
-	turret->draw();
-	ofDrawLine(turret->pos, turret->pos + 150 * heading());
-
+	if (gameStarted) {
+		turret->heading = heading();
+		turret->draw();
+		//ofDrawLine(turret->pos, turret->pos + 150 * heading());
+	}
+	else {
+		text.drawString("PRESS SPACE TO START", 325, ofGetWindowHeight() / 2);
+	}
 
 	if (!bHide) {
 		gui.draw();
@@ -342,35 +330,30 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y) {
 	//	cout << "mouse( " << x << "," << y << ")" << endl;
-	
+
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
-	glm::vec3 mouse = glm::vec3(x, y, 1);
 
-	if (!turret->bSelected) return;
-	
-	//glm::vec3 delta = mouse - mouseLast;
-	
-	turret->setPosition(glm::vec3(x, y, 0));
-
+	if (turret->bSelected) {
+		turret->pos.x = x;
+		turret->pos.y = y;
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-	/*
-	check bounds
-	if ((x > 0 && x < ofGetWindowWidth() - turret->width) && (y > 0 && y < ofGetWindowHeight() - turret->height)) {
-		trans.x = x;
-		trans.y = y;
-
-	}
-	*/
 
 	glm::vec3 mouse = glm::vec3(x, y, 1);
 
-	if (turret->inside(glm::inverse(turret->getMatrix()) * glm::vec4(mouse, 1), turret->pos)) {
+	glm::vec4 point = glm::inverse(turret->getMatrix()) * glm::vec4(mouse, 1);
+
+	int halfOfWidth = turret->width;
+	int halfOfHeight = turret->height;
+
+	if (point.x < halfOfWidth && point.x > -halfOfWidth && point.y < halfOfHeight && point.y > -halfOfHeight)
+	{
 		turret->bSelected = true;
 	}
 	else {
@@ -393,6 +376,8 @@ void ofApp::mouseExited(int x, int y) {
 
 }
 
+
+
 void ofApp::keyPressed(int key) {
 	switch (key) {
 	case 'H':
@@ -400,29 +385,36 @@ void ofApp::keyPressed(int key) {
 		bHide = !bHide;
 		break;
 	case ' ':
+		if (!gameStarted) {
+			gameStarted = true;
+		}
 		turret->start();
 		break;
 	case OF_KEY_LEFT:
-		turret->pos.x -= 10.0;
-		cout << turret->pos << endl;
+		if (turret->pos.x > 0) {
+			turret->pos.x -= 15.0;
+		}
 		break;
 	case OF_KEY_RIGHT:
-		turret->pos.x += 10.0;
-		cout << turret->pos << endl;
+		if (turret->pos.x < ofGetWindowWidth()) {
+			turret->pos.x += 15.0;
+		}
 		break;
 	case OF_KEY_UP:
-		turret->pos += 10.0 * heading();
-		cout << turret->pos << endl;
+		if (turret->pos.y > 0) {
+			turret->pos.y -= 15.0;
+		}
 		break;
 	case OF_KEY_DOWN:
-		turret->pos -= 10.0 * heading();
-		cout << turret->pos << endl;
+		if (turret->pos.y < ofGetWindowHeight()) {
+			turret->pos.y += 15.0;
+		}
 		break;
 	case ',': // equivalent to <
-		turret->rot -= 3;
+		turret->rot -= 5;
 		break;
 	case '.': // equivalent to >
-		turret->rot += 3;
+		turret->rot += 5;
 		break;
 	}
 
@@ -433,7 +425,7 @@ void ofApp::keyPressed(int key) {
 void ofApp::keyReleased(int key) {
 	switch (key) {
 	case ' ':
-		turret->stop();
+		if (gameStarted) turret->stop();
 		break;
 	case OF_KEY_LEFT:
 	case OF_KEY_RIGHT:
@@ -463,4 +455,3 @@ void ofApp::gotMessage(ofMessage msg) {
 void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 }
-
