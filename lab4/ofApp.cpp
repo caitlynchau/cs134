@@ -1,6 +1,6 @@
 //  CS 134 - In-Class exercise - Getting started with Particle Physics
 //
-//  Kevin M. Smith - CS 134 - SJSU CS
+//  Caitlyn Chau - CS 134 - SJSU CS
 
 #include "ofApp.h"
 
@@ -23,52 +23,54 @@ void ofApp::setup(){
 	// some simple sliders to play with parameters
 	//
 	gui.setup();
-	/*
-	gui.add(velocity.setup("Initial Velocity", ofVec3f(0, 20, 0), ofVec3f(0, 0, 0), ofVec3f(100, 100, 100)));	
+	//gui.add(velocity.setup("Initial Velocity", ofVec3f(0, 20, 0), ofVec3f(0, 0, 0), ofVec3f(100, 100, 100)));	
 	gui.add(lifespan.setup("Lifespan", 2.0, .1, 10.0));
 	gui.add(rate.setup("Rate", 1.0, .5, 60.0));
 	gui.add(damping.setup("Damping", .99, .1, 1.0));
-    gui.add(gravity.setup("Gravity", 10, 1, 20));
+    gui.add(gravity.setup("Gravity", -10, -20, 20));
 	gui.add(radius.setup("Radius", .05, .01, .3));
 	gui.add(turbMin.setup("Turbulence Min", ofVec3f(0, 0, 0), ofVec3f(-20, -20, -20), ofVec3f(20, 20, 20)));
 	gui.add(turbMax.setup("Turbulence Max", ofVec3f(0, 0, 0), ofVec3f(-20, -20, -20), ofVec3f(20, 20, 20)));
 	gui.add(radialForceVal.setup("Radial Force", 1000, 100, 5000));
-	*/
+	gui.add(height.setup("Radial Height", 0.01, 0.01, 0.4));
+	gui.add(cyclic.setup("Cyclic Force", 0, 0, 500));
+	
 
 	bHide = false;
 
 	// set up the emitter forces
 	//
-	turbForce = new TurbulenceForce(ofVec3f(-20, -20, -20), ofVec3f(20, 20, 20));
-	gravityForce = new GravityForce(ofVec3f(0, -3.5, 0)); //changed gravity
-	radialForce = new ImpulseRadialForce(1000.0, 1);
-	radialForce->setHeight(0.02);
+	tForce1 = new TurbulenceForce(ofVec3f(-20, -20, -20), ofVec3f(20, 20, 20));
+	gForce1 = new GravityForce(ofVec3f(0, -10, 0)); //changed gravity
+	rForce1 = new ImpulseRadialForce(300, 1);
+	rForce1->setHeight(1);
 
-	emitter1.sys->addForce(turbForce);
-	emitter1.sys->addForce(gravityForce);
-	emitter1.sys->addForce(radialForce);
+	emitter1.sys->addForce(tForce1);
+	emitter1.sys->addForce(gForce1);
+	emitter1.sys->addForce(rForce1);
 
 	emitter1.setVelocity(ofVec3f(0, 0, 0));
 	emitter1.setOneShot(true);
 	emitter1.setEmitterType(RadialEmitter);
-	emitter1.setGroupSize(5000);
+	emitter1.setGroupSize(3000);
+	
 
-
-	turbForce = new TurbulenceForce(ofVec3f(turbMin->x, turbMin->y, turbMin->z), ofVec3f(turbMax->x, turbMax->y, turbMax->z));
-	gravityForce = new GravityForce(ofVec3f(0, -gravity, 0));
-	radialForce = new ImpulseRadialForce(radialForceVal, 1);
-	radialForce->setHeight(0.2);
-
-	emitter2.sys->addForce(turbForce);
-	emitter2.sys->addForce(gravityForce);
-	emitter2.sys->addForce(radialForce);
+	tForce2 = new TurbulenceForce(ofVec3f(turbMin->x, turbMin->y, turbMin->z), ofVec3f(turbMax->x, turbMax->y, turbMax->z));
+	gForce2 = new GravityForce(ofVec3f(0, -10, 0));
+	rForce2 = new ImpulseRadialForce(radialForceVal, 1);
+	rForce2->setHeight(0.02);
+	cForce2 = new CyclicForce(cyclic);
+	
+	emitter2.sys->addForce(tForce2);
+	emitter2.sys->addForce(gForce2);
+	emitter2.sys->addForce(rForce2);
+	emitter2.sys->addForce(cForce2);
 	
 	emitter2.setVelocity(ofVec3f(0, 0, 0));
 	emitter2.setOneShot(true);
 	emitter2.setEmitterType(RadialEmitter);
-	emitter2.setGroupSize(2500);
+	emitter2.setGroupSize(1000);
 	
-
 
 }
 
@@ -78,16 +80,19 @@ void ofApp::update() {
 	ofSeedRandom();
 
 	emitter1.setLifespan(lifespan);
-	//emitter1.setVelocity(ofVec3f(velocity->x, velocity->y, velocity->z));
 	emitter1.setRate(rate);
 	emitter1.setParticleRadius(radius);
+	emitter1.update();
 
 	emitter2.setLifespan(lifespan);
 	emitter2.setRate(rate);
 	emitter2.setParticleRadius(radius);
-
-	emitter1.update();
+	gForce2->set(ofVec3f(0, gravity, 0)); 
+	tForce2->set(ofVec3f(turbMin->x, turbMin->y, turbMin->z), ofVec3f(turbMax->x, turbMax->y, turbMax->z));
+	rForce2->setHeight(height);
+	cForce2->setMagnitude(cyclic);
 	emitter2.update();
+	
 }
 
 //--------------------------------------------------------------

@@ -32,9 +32,14 @@ class ofApp : public ofBaseApp{
 
 		// adding forces
 		//
-		TurbulenceForce *turbForce;
-		GravityForce *gravityForce;
-		ImpulseRadialForce *radialForce;
+		TurbulenceForce *tForce1;
+		GravityForce *gForce1;
+		ImpulseRadialForce *rForce1;
+
+		TurbulenceForce *tForce2;
+		GravityForce *gForce2;
+		ImpulseRadialForce *rForce2;
+		CyclicForce *cForce2;
 
 
 		// some simple sliders to play with parameters
@@ -43,7 +48,7 @@ class ofApp : public ofBaseApp{
 		ofxFloatSlider gravity;
 		ofxFloatSlider damping;
 		ofxFloatSlider radius;
-		ofxVec3Slider velocity;
+		//ofxVec3Slider velocity;
 		ofxFloatSlider lifespan;
 		ofxFloatSlider rate;
 
@@ -54,7 +59,8 @@ class ofApp : public ofBaseApp{
 		ofxVec3Slider turbMax;
 		ofxFloatSlider mass;
 		ofxFloatSlider radialForceVal;
-		
+		ofxFloatSlider height;
+		ofxFloatSlider cyclic;
 
 
 		ofxPanel gui;

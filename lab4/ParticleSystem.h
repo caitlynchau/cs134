@@ -38,6 +38,7 @@ class GravityForce: public ParticleForce {
 public:
 	GravityForce(const ofVec3f & gravity);
 	void updateForce(Particle *);
+	void set(const ofVec3f &g);
 };
 
 class TurbulenceForce : public ParticleForce {
@@ -45,6 +46,7 @@ class TurbulenceForce : public ParticleForce {
 public:
 	TurbulenceForce(const ofVec3f & min, const ofVec3f &max);
 	void updateForce(Particle *);
+	void set(const ofVec3f &min, const ofVec3f &max);
 };
 
 class ImpulseRadialForce : public ParticleForce {
@@ -54,4 +56,12 @@ public:
 	ImpulseRadialForce(float magnitude, float height); 
 	void updateForce(Particle *);
 	void setHeight(float height);
+};
+
+class CyclicForce : public ParticleForce {
+	float magnitude;
+public:
+	CyclicForce(float magnitude);
+	void updateForce(Particle *);
+	void setMagnitude(float magnitude);
 };
