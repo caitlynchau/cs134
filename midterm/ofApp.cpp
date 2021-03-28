@@ -87,6 +87,8 @@ void TriShip::integrate() {
 	cout << "integrate() = " << forces << endl;
 	velocity += accel * dt;
 
+	cout << "integrate() velocity = " << velocity << endl;
+
 	// add a little damping for good measure
 	//
 	velocity *= damping;
@@ -94,7 +96,7 @@ void TriShip::integrate() {
 
 	// clear forces on particle (they get re-added each step)
 	//
-	forces.set(10, 10, 10);
+	forces.set(0, 0, 0);
 }
 
 
@@ -105,16 +107,26 @@ ThrustForce::ThrustForce(float magnitude) {
 
 
 //--------------------------------------------------------------
-void ThrustForce::updateForce(TriShip ship) {
-	cout << "before updateForce() = " << ship.forces << endl;
-	ship.forces += magnitude;
-	cout << "updateForce() = " << ship.forces << endl;
+void ThrustForce::updateForce(TriShip *ship) {
+	cout << "before updateForce() = " << ship->forces << endl;
+	//ship->forces += magnitude;
+	//ship->forces.x = magnitude;
+	//ship->forces.y += magnitude;
+	ship->forces = f;
+	cout << "after updateForce() = " << ship->forces << endl;
 }
+
+
+void ThrustForce::set(ofVec3f f) {
+	this->f = f;
+}
+
 
 
 void ThrustForce::set(float magnitude) {
 	this->magnitude = magnitude;
 }
+
 
 void ofApp::attack() {
 	for (int i = 0; i < attackers.size(); i++) {
@@ -142,6 +154,9 @@ void ofApp::run() {
 
 //--------------------------------------------------------------
 void ofApp::resetScreen() {
+	tri.forces = ofVec3f(0, 0, 0);
+	tri.velocity = ofVec3f(0, 0, 0);
+	tri.angularVelocity = 0;
 	tri.pos = glm::vec3(ofGetWindowWidth() / 2, ofGetWindowHeight() / 2, 1);
 	runners.clear();
 	attackers.clear();
@@ -180,7 +195,7 @@ void ofApp::addRunner() {
 void ofApp::setup() {
 
 	ofSetBackgroundColor((ofColor::black));
-
+	//tri = new TriShip();
 	tri.pos = glm::vec3(ofGetWindowWidth() / 2.0, ofGetWindowHeight() / 2.0, 1);
 	tri.scale = glm::vec3(3.0, 3.0, 3.0);
 
@@ -212,8 +227,8 @@ void ofApp::update() {
 
 		// update forces
 		cout << "slider value = " << thrustSlider << endl;
-		thrustForce->set(thrustSlider);
-		thrustForce->updateForce(tri);
+		//thrustForce->set(thrustSlider);
+		//thrustForce->updateForce(&tri);
 
 		tri.integrate();
 		run();
@@ -222,10 +237,13 @@ void ofApp::update() {
 		
 
 		for (int i = 0; i < runners.size(); i++) {
-				runnerThrustForce->set(runnerThrustSlider);
-				runnerThrustForce->updateForce(runners[i]);
+			runnerThrustForce->set(runnerThrustSlider);
+			runnerThrustForce->updateForce(&runners[i]);
 		}
-		//for (int i = 0; i < attackers.size(); i++) runnerThrustForce->updateForce(attackers[i]);
+		for (int i = 0; i < attackers.size(); i++) {
+			runnerThrustForce->set(runnerThrustSlider);
+			runnerThrustForce->updateForce(&attackers[i]);
+		}
 	}
 	
 }
@@ -301,10 +319,24 @@ void ofApp::keyPressed(int key) {
 		tri.angularVelocity += 10;
 		break;
 	case OF_KEY_UP:     // go forward
-		tri.velocity += 5 * heading();
+
+		f = ofVec3f(-heading().x * thrustSlider, -heading().y * thrustSlider, -heading().z * thrustSlider);
+		//ofVec3f x = heading() * thrustSlider;
+
+		thrustForce->set(f);
+		thrustForce->updateForce(&tri);
+		tri.velocity -= 2 * heading();
 		break;
 	case OF_KEY_DOWN:   // go backwards
-		tri.velocity -= 5 * heading();
+
+		f = ofVec3f(heading().x * thrustSlider, heading().y * thrustSlider, heading().z * thrustSlider);
+		//ofVec3f x = heading() * thrustSlider;
+
+		thrustForce->set(f);
+
+		//thrustForce->set(thrustSlider);
+		thrustForce->updateForce(&tri);
+		tri.velocity += 2 * heading();
 		break;
 	case ' ':
 		bStartSim = !bStartSim;

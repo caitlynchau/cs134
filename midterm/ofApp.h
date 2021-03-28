@@ -99,7 +99,7 @@ public:
 
 	// Physics data goes here  (for integrate() );
 	//
-	ofVec3f velocity = ofVec3f(0, 50, 0); // change 30
+	ofVec3f velocity = ofVec3f(0, 0, 0); 
 	float angularVelocity = 0;
 	ofVec3f acceleration;
 	ofVec3f forces;
@@ -116,16 +116,19 @@ protected:
 public:
 	bool applyOnce = false;
 	bool applied = false;
-	virtual void updateForce(TriShip) = 0;
+	virtual void updateForce(TriShip *) = 0;
 };
 
 class ThrustForce : public Force {
 	float magnitude;
+	ofVec3f f;
 public:
 	//ThrustForce() { magnitude = 0; }
 	ThrustForce(float magnitude);
-	void updateForce(TriShip tri);
+	void updateForce(TriShip *tri);
+	void set(ofVec3f f);
 	void set(float magnitude);
+	//void setForce(ofVec3f f);
 };
 
 
@@ -171,6 +174,7 @@ public:
 
 	// App-specific data
 	//
+	ofVec3f f;
 	ThrustForce *thrustForce;
 	ThrustForce *runnerThrustForce; // attack & enemy thrust force
 	TriShip tri;
